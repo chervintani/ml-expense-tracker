@@ -827,9 +827,10 @@ document.addEventListener("keydown", (ev) => {
 // Theme + greeting
 // ---------------------------------------------------------------------------
 
+// The page opens in light mode (data-theme="light" in index.html); the toggle
+// switches themes for the current visit only.
 const root = document.documentElement;
-const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-const activeTheme = () => root.dataset.theme || (darkQuery.matches ? "dark" : "light");
+const activeTheme = () => (root.dataset.theme === "dark" ? "dark" : "light");
 
 function syncThemeButton() {
   const dark = activeTheme() === "dark";
@@ -842,12 +843,9 @@ function syncThemeButton() {
 }
 
 $("#theme-toggle").addEventListener("click", () => {
-  const next = activeTheme() === "dark" ? "light" : "dark";
-  root.dataset.theme = next;
-  try { localStorage.setItem("theme", next); } catch (_) { /* storage unavailable */ }
+  root.dataset.theme = activeTheme() === "dark" ? "light" : "dark";
   syncThemeButton();
 });
-darkQuery.addEventListener("change", syncThemeButton);
 
 function renderGreeting() {
   const now = new Date();

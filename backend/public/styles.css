@@ -1,6 +1,6 @@
 /* ==========================================================================
    Smart Expense Tracker — styles
-   Tokens first (light, then dark), then components.
+   Tokens first (light by default, dark under [data-theme="dark"]), then components.
    ========================================================================== */
 
 :root {
@@ -47,38 +47,6 @@
   --shadow-pop: 0 18px 50px -18px rgba(16, 18, 40, 0.35);
   --radius: 20px;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #090b13;
-    --surface: #11141f;
-    --surface-2: #161a28;
-    --surface-3: #1d2233;
-    --border: #232840;
-    --border-strong: #30364f;
-    --ink: #eef0fb;
-    --ink-2: #c4c8de;
-    --muted: #9096b4;
-    --brand-ink: #a5b4fc;
-    --brand-soft: rgba(129, 140, 248, 0.14);
-    --ring: rgba(129, 140, 248, 0.38);
-    --meter: #818cf8;
-    --grad-text: linear-gradient(90deg, #818cf8, #c084fc 55%, #f472b6);
-    --good-ink: #0ca30c;
-    --crit-soft: rgba(208, 59, 59, 0.16);
-    --cat-transport: #3987e5;
-    --cat-food: #d95926;
-    --cat-bills: #199e70;
-    --cat-utilities: #c98500;
-    --cat-shopping: #d55181;
-    --cat-other: #898781;
-    --cat-uncategorized: #52514e;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -18px rgba(0, 0, 0, 0.7);
-    --shadow-pop: 0 20px 50px -16px rgba(0, 0, 0, 0.75);
-  }
 }
 
 :root[data-theme="dark"] {
@@ -1241,9 +1209,6 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 @keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(0.96); } }
 @keyframes toast-out { to { opacity: 0; transform: translateY(8px) scale(0.96); } }
 :root[data-theme="dark"] .toast-success .icon { color: #006300; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .toast-success .icon { color: #006300; }
-}
 
 /* ---------- Skeletons ---------- */
 

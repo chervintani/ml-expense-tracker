@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ml-service",
+      "runtimeExecutable": "ml-service/.venv/bin/python",
+      "runtimeArgs": ["ml-service/app.py"],
+      "port": 5001
+    },
+    {
+      "name": "laravel",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["backend/artisan", "serve", "--port=8000"],
+      "port": 8000
+    }
+  ]
+}

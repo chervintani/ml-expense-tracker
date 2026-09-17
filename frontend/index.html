@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Expense Tracker</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Smart Expense Tracker</h1>
+    <p class="subtitle">Expenses auto-categorized by an ML model, with outlier detection</p>
+    <p id="ml-status" class="ml-status"></p>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Add expense</h2>
+      <form id="expense-form" class="expense-form">
+        <input type="text" id="description" placeholder="e.g. Grab to office" autocomplete="off" required />
+        <input type="number" id="amount" placeholder="Amount (PHP)" step="0.01" min="0" required />
+        <button type="submit" id="submit-btn">Add</button>
+      </form>
+      <p id="form-status" class="status"></p>
+    </section>
+
+    <section class="card">
+      <h2>Spending by category</h2>
+      <div id="summary" class="summary"></div>
+    </section>
+
+    <section class="card">
+      <h2>Expenses</h2>
+      <p class="hint">Wrong prediction? Pick the right category and hit Save — that confirms it and feeds the outlier baseline.</p>
+      <div class="table-wrap">
+        <table class="expense-table">
+          <thead>
+            <tr>
+              <th>Description</th><th>Amount</th><th>Category</th>
+              <th>Confidence</th><th>Flag</th><th>Date</th><th>Correct / remove</th>
+            </tr>
+          </thead>
+          <tbody id="expense-rows"></tbody>
+        </table>
+      </div>
+      <p id="empty-state" class="status">No expenses yet — add one above.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

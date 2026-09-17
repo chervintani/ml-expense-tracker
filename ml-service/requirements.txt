@@ -1,0 +1,9 @@
+# ML microservice dependencies.
+# Requires Python 3.10-3.12 (TensorFlow has no wheels for 3.14 yet),
+# so this project uses a dedicated python3.12 virtualenv.
+tensorflow
+scikit-learn
+flask
+flask-cors
+pandas
+numpy

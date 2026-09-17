@@ -4,49 +4,251 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smart Expense Tracker</title>
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="Expense tracker that auto-categorizes spending with a TensorFlow model and flags unusually large expenses." />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f5f6fb" />
+  <script>
+    // Apply a saved theme before first paint so the page never flashes the wrong one.
+    try {
+      var savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "light" || savedTheme === "dark") document.documentElement.dataset.theme = savedTheme;
+    } catch (_) { /* storage unavailable: follow the OS setting */ }
+  </script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234f46e5'/%3E%3Cstop offset='1' stop-color='%237c3aed'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='9' fill='url(%23g)'/%3E%3Cpath d='M16 6c.8 5.6 4.4 9.2 10 10-5.6.8-9.2 4.4-10 10-.8-5.6-4.4-9.2-10-10 5.6-.8 9.2-4.4 10-10z' fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
 <body>
-  <header class="app-header">
-    <h1>Smart Expense Tracker</h1>
-    <p class="subtitle">Expenses auto-categorized by an ML model, with outlier detection</p>
-    <p id="ml-status" class="ml-status"></p>
+  <!-- Icon sprite (stroke icons, 24px grid). Category icons are named after the category slug. -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true">
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M11 3c.6 4.4 3.6 7.4 8 8-4.4.6-7.4 3.6-8 8-.6-4.4-3.6-7.4-8-8 4.4-.6 7.4-3.6 8-8z"/><path d="M19 2v4M17 4h4"/><path d="M19.5 16.5v3M18 18h3"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></symbol>
+    <symbol id="i-food" viewBox="0 0 24 24"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></symbol>
+    <symbol id="i-transport" viewBox="0 0 24 24"><path d="M5 11l1.6-4.3A2 2 0 0 1 8.5 5.4h7a2 2 0 0 1 1.9 1.3L19 11"/><path d="M5 18H4a1 1 0 0 1-1-1v-3.5A2.5 2.5 0 0 1 5.5 11h13a2.5 2.5 0 0 1 2.5 2.5V17a1 1 0 0 1-1 1h-1"/><path d="M9 18h6"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+    <symbol id="i-utilities" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-shopping" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></symbol>
+    <symbol id="i-bills" viewBox="0 0 24 24"><path d="M5 3v18l2.33-1.5L9.67 21 12 19.5l2.33 1.5 2.34-1.5L19 21V3l-2.33 1.5L14.33 3 12 4.5 9.67 3 7.33 4.5z"/><path d="M9 8.5h6"/><path d="M9 12.5h6"/><path d="M9 16h3"/></symbol>
+    <symbol id="i-other" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><path d="M7 7h.01"/></symbol>
+    <symbol id="i-uncategorized" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+    <symbol id="i-trending" viewBox="0 0 24 24"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></symbol>
+    <symbol id="i-bars" viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></symbol>
+  </svg>
+
+  <div class="aurora" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg></span>
+        <span class="brand-text">
+          <span class="brand-name">Smart Expense</span>
+          <span class="brand-tag">AI-powered tracker</span>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <span id="ml-status" class="status-pill" data-state="checking" role="status" title="Contacting the API">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span class="label">Checking model…</span>
+        </span>
+        <button id="theme-toggle" class="icon-btn" type="button" aria-label="Switch theme">
+          <svg class="icon" aria-hidden="true"><use href="#i-moon"/></svg>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <main class="container">
-    <section class="card">
-      <h2>Add expense</h2>
-      <form id="expense-form" class="expense-form">
-        <input type="text" id="description" placeholder="e.g. Grab to office" autocomplete="off" required />
-        <input type="number" id="amount" placeholder="Amount (PHP)" step="0.01" min="0" required />
-        <button type="submit" id="submit-btn">Add</button>
-      </form>
-      <p id="form-status" class="status"></p>
+  <main class="page">
+    <section class="intro">
+      <p class="eyebrow" id="today">&nbsp;</p>
+      <h1><span id="greeting">Hello</span> — here's where <span class="grad-text">your money</span> went</h1>
+      <p class="lede">Every expense is auto-categorized by a TensorFlow model and checked for unusually large amounts.</p>
     </section>
 
-    <section class="card">
-      <h2>Spending by category</h2>
-      <div id="summary" class="summary"></div>
-    </section>
-
-    <section class="card">
-      <h2>Expenses</h2>
-      <p class="hint">Wrong prediction? Pick the right category and hit Save — that confirms it and feeds the outlier baseline.</p>
-      <div class="table-wrap">
-        <table class="expense-table">
-          <thead>
-            <tr>
-              <th>Description</th><th>Amount</th><th>Category</th>
-              <th>Confidence</th><th>Flag</th><th>Date</th><th>Correct / remove</th>
-            </tr>
-          </thead>
-          <tbody id="expense-rows"></tbody>
-        </table>
+    <section class="hero" aria-label="Spending overview">
+      <div class="hero-main">
+        <p class="hero-label"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg> Total spent</p>
+        <p class="hero-value">
+          <span id="hero-value" aria-hidden="true"><span class="skeleton skeleton-hero"></span></span>
+          <span id="hero-value-sr" class="sr-only">Loading</span>
+        </p>
+        <p class="hero-sub">
+          <span class="hero-pill" id="hero-count">— expenses</span>
+          <span class="hero-pill" id="hero-cats">— categories</span>
+        </p>
       </div>
-      <p id="empty-state" class="status">No expenses yet — add one above.</p>
+      <div class="hero-kpis">
+        <div class="kpi" id="kpi-top">
+          <div class="kpi-head">
+            <span class="kpi-label">Top category</span>
+            <span class="kpi-icon"><svg class="icon" aria-hidden="true"><use href="#i-trending"/></svg></span>
+          </div>
+          <p class="kpi-value">—</p>
+          <p class="kpi-sub">&nbsp;</p>
+        </div>
+        <div class="kpi" id="kpi-avg">
+          <div class="kpi-head">
+            <span class="kpi-label">Average spend</span>
+            <span class="kpi-icon"><svg class="icon" aria-hidden="true"><use href="#i-bars"/></svg></span>
+          </div>
+          <p class="kpi-value">—</p>
+          <p class="kpi-sub">&nbsp;</p>
+        </div>
+        <button class="kpi kpi-button" id="kpi-outliers" type="button" data-state="clear" disabled>
+          <span class="kpi-head">
+            <span class="kpi-label">Flagged outliers</span>
+            <span class="kpi-icon"><svg class="icon" aria-hidden="true"><use href="#i-check-circle"/></svg></span>
+          </span>
+          <span class="kpi-value">—</span>
+          <span class="kpi-sub">&nbsp;</span>
+        </button>
+      </div>
     </section>
+
+    <div class="layout">
+      <div class="rail">
+        <section class="card add-card" aria-labelledby="add-title">
+          <header class="card-head">
+            <div>
+              <h2 class="card-title" id="add-title">Add expense</h2>
+              <p class="card-sub">The model picks a category as you save.</p>
+            </div>
+            <span class="ai-badge"><svg class="icon" aria-hidden="true"><use href="#i-sparkles"/></svg> TensorFlow</span>
+          </header>
+
+          <form id="expense-form" class="add-form">
+            <label class="field">
+              <span class="field-label">What did you spend on?</span>
+              <span class="input-wrap">
+                <svg class="icon" aria-hidden="true"><use href="#i-other"/></svg>
+                <input type="text" id="description" name="description" placeholder="e.g. Grab to office" autocomplete="off" maxlength="255" required />
+              </span>
+            </label>
+            <label class="field">
+              <span class="field-label">Amount</span>
+              <span class="input-wrap">
+                <span class="prefix" aria-hidden="true">₱</span>
+                <input type="number" id="amount" name="amount" placeholder="0.00" step="0.01" min="0.01" inputmode="decimal" required />
+              </span>
+            </label>
+            <button type="submit" id="submit-btn" class="btn btn-primary btn-block">
+              <svg class="icon btn-icon" aria-hidden="true"><use href="#i-sparkles"/></svg>
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="btn-label">Add &amp; categorize</span>
+            </button>
+          </form>
+
+          <div class="suggestions">
+            <span class="suggestions-label">Try</span>
+            <button type="button" class="suggestion" data-amount="185">Jollibee lunch</button>
+            <button type="button" class="suggestion" data-amount="240">Grab to office</button>
+            <button type="button" class="suggestion" data-amount="2350">Meralco bill</button>
+            <button type="button" class="suggestion" data-amount="549">Netflix subscription</button>
+            <button type="button" class="suggestion" data-amount="890">Shopee order</button>
+          </div>
+
+          <p id="form-status" class="form-status" role="alert"></p>
+          <div id="prediction" class="prediction" role="status" hidden></div>
+        </section>
+
+        <section class="card breakdown-card" aria-labelledby="breakdown-title">
+          <header class="card-head">
+            <div>
+              <h2 class="card-title" id="breakdown-title">Spending by category</h2>
+              <p class="card-sub">Share of total spend · tap one to filter</p>
+            </div>
+            <button type="button" id="clear-category" class="link-btn" hidden>Clear</button>
+          </header>
+          <ul id="breakdown" class="breakdown">
+            <li class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></li>
+            <li class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></li>
+            <li class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="card expenses-card" aria-labelledby="expenses-title">
+        <header class="card-head">
+          <div>
+            <h2 class="card-title" id="expenses-title" tabindex="-1">Expenses <span class="count-badge" id="expense-count">…</span></h2>
+            <p class="card-sub">Wrong category? Click it to correct — confirmed rows become the outlier baseline.</p>
+          </div>
+          <label class="search">
+            <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+            <input type="search" id="search" placeholder="Search expenses" aria-label="Search expenses" autocomplete="off" />
+            <kbd aria-hidden="true">/</kbd>
+          </label>
+        </header>
+
+        <div id="filters" class="filters" role="toolbar" aria-label="Filter expenses"></div>
+
+        <div class="table-wrap">
+          <table class="expense-table" id="expense-table">
+            <thead>
+              <tr>
+                <th scope="col">Expense</th>
+                <th scope="col">Category</th>
+                <th scope="col">Confidence</th>
+                <th scope="col" class="num">Amount</th>
+                <th scope="col"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="expense-rows">
+              <tr class="skeleton-tr"><td colspan="5"><span class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></span></td></tr>
+              <tr class="skeleton-tr"><td colspan="5"><span class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></span></td></tr>
+              <tr class="skeleton-tr"><td colspan="5"><span class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></span></td></tr>
+              <tr class="skeleton-tr"><td colspan="5"><span class="skeleton-row"><span class="skeleton skeleton-avatar"></span><span class="skeleton-lines"><span class="skeleton"></span><span class="skeleton short"></span></span></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="empty-state" class="empty" hidden></div>
+
+        <footer class="list-foot">
+          <span id="list-meta"></span>
+          <button type="button" id="load-more" class="btn btn-ghost btn-sm" hidden>
+            Load more <svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg>
+          </button>
+        </footer>
+      </section>
+    </div>
   </main>
 
-  <script src="app.js"></script>
+  <footer class="footer">
+    <span>Smart Expense Tracker</span>
+    <span aria-hidden="true">·</span>
+    <span>Laravel API + Flask ML service</span>
+    <span aria-hidden="true">·</span>
+    <span>TF-IDF → Keras classifier</span>
+  </footer>
+
+  <div id="cat-menu" class="menu" role="menu" aria-label="Set category" hidden></div>
+
+  <dialog id="confirm-dialog" class="dialog" aria-labelledby="dialog-title" aria-describedby="dialog-body">
+    <form method="dialog" class="dialog-inner">
+      <span class="dialog-icon"><svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg></span>
+      <h3 id="dialog-title" class="dialog-title">Delete this expense?</h3>
+      <p id="dialog-body" class="dialog-body"></p>
+      <div class="dialog-actions">
+        <button type="submit" value="cancel" class="btn btn-ghost" autofocus>Cancel</button>
+        <button type="submit" value="confirm" class="btn btn-danger">Delete</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <script src="app.js?v=2"></script>
 </body>
 </html>
